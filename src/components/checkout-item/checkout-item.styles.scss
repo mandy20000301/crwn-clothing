@@ -1,0 +1,18 @@
+.checkout-item-container{
+    display: flex;
+    align-items: center;
+    .box{
+        width: 20%;
+        text-align: center;
+        img{
+            display: block;
+            width: 80%;
+            margin: 0 auto;
+        }
+        .quantity-box{
+            display: flex;
+            width: fit-content;
+            margin: 0 auto;
+        }
+    }
+}
