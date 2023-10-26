@@ -1,4 +1,5 @@
-import { createContext, useState, useEffect } from "react";
+import { createContext, useReducer } from "react";
+import { createAction } from "../utils/reducer/reducer.utlis";
 const addcCartItem = (cartItems, productToAdd) => {
     //find if cartItems contains productToAdd
     const existingCartItem = cartItems.find((item) => {
@@ -39,37 +40,71 @@ export const CartContext = createContext({
     totalPrice:0,
 });
 
+const INITIAL_STATE = {
+    isCartOpen: false,
+    cartItems: [],
+    cartCount: 0,
+    totalPrice:0,
+};
+
+const CART_ACTION_TYPES = {
+    SET_CART_ITEMS:'SET_CART_ITEMS',
+    SET_IS_CART_OPEN:'SET_IS_CART_OPEN'
+}
+
+const cartReduer = (state, action) => {
+    const {type, payload} = action;
+
+    switch (type) {
+        case CART_ACTION_TYPES.SET_CART_ITEMS:
+            return {
+                ...state,
+                ...payload
+            }
+        case CART_ACTION_TYPES.SET_IS_CART_OPEN:
+            return {
+                ...state,
+                isCartOpen: payload
+            }
+        default:
+            throw new Error(`unhandled type ${type} in cartReduer`);
+    }
+}
+
+
 export const CartProvider = ({ children }) => {
-    const [isCartOpen, setIsCartOpen] = useState(false);
-    const [cartItems, setCartItems] = useState([]);
-    const [cartCount, setCartCount] = useState(0);
-    const [totalPrice, setTotalPrice] = useState(0);
+    const [{ isCartOpen, cartItems, cartCount, totalPrice}, dispatch] = useReducer(cartReduer, INITIAL_STATE);
 
-    useEffect(() => {
-        const newCartCount = cartItems.reduce((total, cartItem) => {
+    const updateCartItemsReducer = (newCartItems) => {
+        const newCartCount = newCartItems.reduce((total, cartItem) => {
             return total + cartItem.quantity
-        }, 0)
-        setCartCount(newCartCount);
-    }, [cartItems])
+        }, 0);
 
-    useEffect(() => {
-        const newTotalPrice = cartItems.reduce((total, cartItem) => {
+        const newTotalPrice = newCartItems.reduce((total, cartItem) => {
             return total + (cartItem.price * cartItem.quantity)
         }, 0)
-        setTotalPrice(newTotalPrice);
-    }, [cartItems])
+
+        dispatch(createAction(CART_ACTION_TYPES.SET_CART_ITEMS,{cartItems:newCartItems, cartCount: newCartCount, totalPrice: newTotalPrice}));
+    }
+
     const addItemToCart = (itemToAdd) => {
-        setCartItems(addcCartItem(cartItems, itemToAdd))
+        const newCartItems = addcCartItem(cartItems, itemToAdd);
+        updateCartItemsReducer(newCartItems); 
     }
 
     const reduceItemFromCart = (itemToReduce) => {
-        setCartItems(reduceCartItem(cartItems, itemToReduce))
+        const newCartItems = reduceCartItem(cartItems, itemToReduce);
+        updateCartItemsReducer(newCartItems); 
     }
 
     const removeItemFromCart = (itemToRemove) => {
-        setCartItems(removeCartItem(cartItems,itemToRemove))
+        const newCartItems = removeCartItem(cartItems,itemToRemove);
+        updateCartItemsReducer(newCartItems); 
     }
     
+    const setIsCartOpen = (bool) => {
+        dispatch(createAction(CART_ACTION_TYPES.SET_IS_CART_OPEN, bool));
+    }
     const value = { isCartOpen, setIsCartOpen, addItemToCart, reduceItemFromCart, removeItemFromCart, cartItems, cartCount, totalPrice };
     return <CartContext.Provider value={value}>{children}</CartContext.Provider>
 }
